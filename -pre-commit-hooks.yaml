@@ -1,0 +1,8 @@
+repos:
+  - repo: local
+    hooks:
+      - id: clean-config-files
+        name: Clean Config Files
+        entry: python clean_config_files.py
+        language: python
+        types: [text]
