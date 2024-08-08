@@ -5,5 +5,5 @@ repos:
         name: Clean Config Files
         entry: python clean_paths_files.py
         language: python
-        types: [text, py, txt]
+        types: [text]
         stages: [commit]
