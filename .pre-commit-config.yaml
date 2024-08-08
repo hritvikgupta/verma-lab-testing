@@ -6,5 +6,5 @@ repos:
         entry: python clean_paths_files.py
         language: python
         types: [text]
-        args: [ "/PMBB/"]
+        args: [ "dummy/file_param_name.extension"]
         stages: [commit]

@@ -7,7 +7,7 @@ def clean_file(file_path):
       with open(file_path, 'r', encoding='utf-8') as file:
           content = file.read()
 
-      pattern = r'"\/path\/to\/file_param_name\.extension?"'
+      pattern = r'"/PMBB/"'
       replacement = '"dummy/file_param_name.extension"'
       cleaned_content = re.sub(pattern, replacement, content)
 
