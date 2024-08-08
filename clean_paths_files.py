@@ -1,7 +1,6 @@
 import re
 import os
 import argparse
-from glob import glob
 
 def clean_file(file_path):
     print(f"Cleaning file: {file_path}")
@@ -10,15 +9,19 @@ def clean_file(file_path):
             content = file.read()
 
         # Define the pattern and replacement
-        pattern = r'/PMBB/file_param_name.extension'
+        pattern = r'dummy/file_param_name.extension'
         replacement = 'dummy/file_param_name.extension'
 
         # Perform the replacement
         cleaned_content = re.sub(pattern, replacement, content)
 
-        # Write the cleaned content back to the file
-        with open(file_path, 'w', encoding='utf-8') as file:
-            file.write(cleaned_content)
+        if content != cleaned_content:
+            # Write the cleaned content back to the file
+            with open(file_path, 'w', encoding='utf-8') as file:
+                file.write(cleaned_content)
+            print(f"File modified: {file_path}")
+        else:
+            print(f"No changes needed for file: {file_path}")
 
     except Exception as e:
         print(f"Error cleaning file: {e}")
@@ -41,7 +44,7 @@ def main(argv=None):
         elif os.path.isfile(path):
             clean_file(path)
         else:
-            print(f"Invalid path: {path}")
+            print(f"Invalid path or file not found: {path}")
 
     print("Finished running clean_paths_files.py")
 
