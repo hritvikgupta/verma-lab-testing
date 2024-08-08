@@ -1,33 +1,50 @@
 import re
+import os
 import argparse
+from glob import glob
 
 def clean_file(file_path):
-  print(f"Cleaning file: {file_path}")
-  try:
-      with open(file_path, 'r', encoding='utf-8') as file:
-          content = file.read()
+    print(f"Cleaning file: {file_path}")
+    try:
+        with open(file_path, 'r', encoding='utf-8') as file:
+            content = file.read()
 
-      pattern = r'"/PMBB/file_param_name.extension"'
-      replacement = '"dummy/file_param_name.extension"'
-      cleaned_content = re.sub(pattern, replacement, content)
+        # Define the pattern and replacement
+        pattern = r'/PMBB/file_param_name.extension'
+        replacement = 'dummy/file_param_name.extension'
 
-      with open(file_path, 'w', encoding='utf-8') as file:
-          file.write(cleaned_content)
+        # Perform the replacement
+        cleaned_content = re.sub(pattern, replacement, content)
 
-  except Exception as e:
-      print(f"Error cleaning file: {e}")
+        # Write the cleaned content back to the file
+        with open(file_path, 'w', encoding='utf-8') as file:
+            file.write(cleaned_content)
+
+    except Exception as e:
+        print(f"Error cleaning file: {e}")
+
+def clean_directory(directory_path):
+    for root, _, files in os.walk(directory_path):
+        for file in files:
+            file_path = os.path.join(root, file)
+            clean_file(file_path)
 
 def main(argv=None):
-  print("Running clean_config_files.py")
-  parser = argparse.ArgumentParser()
-  parser.add_argument('filenames', nargs='*', help='Filenames to clean')
-  args = parser.parse_args(argv)
+    print("Running clean_paths_files.py")
+    parser = argparse.ArgumentParser()
+    parser.add_argument('paths', nargs='*', help='Paths to directories or files to clean')
+    args = parser.parse_args(argv)
 
-  for file_path in args.filenames:
-      clean_file(file_path)
+    for path in args.paths:
+        if os.path.isdir(path):
+            clean_directory(path)
+        elif os.path.isfile(path):
+            clean_file(path)
+        else:
+            print(f"Invalid path: {path}")
 
-  print("Finished running clean_config_files.py")
+    print("Finished running clean_paths_files.py")
 
 if __name__ == '__main__':
-  import sys
-  sys.exit(main())
+    import sys
+    sys.exit(main())

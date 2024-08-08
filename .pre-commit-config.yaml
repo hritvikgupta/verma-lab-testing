@@ -6,4 +6,6 @@ repos:
         entry: python clean_paths_files.py
         language: python
         files: test_file.py
+        args: 
+          - "/PMBB"
         stages: [commit]
