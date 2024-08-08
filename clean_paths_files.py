@@ -1,31 +1,33 @@
 import re
 import argparse
-from typing import Sequence
 
-def clean_files(file_path):
-    try:
-        with open(file_path, 'r') as file:
-            content = file.read()
+def clean_file(file_path):
+  print(f"Cleaning file: {file_path}")
+  try:
+      with open(file_path, 'r', encoding='utf-8') as file:
+          content = file.read()
 
-        pattern = r'"\/path\/to\/file_param_name\.extension?"'
-        replacement = '"dummy/file_param_name.extension"'
+      pattern = r'"\/path\/to\/file_param_name\.extension?"'
+      replacement = '"dummy/file_param_name.extension"'
+      cleaned_content = re.sub(pattern, replacement, content)
 
-        cleaned_files = re.sub(pattern, replacement, content)
+      with open(file_path, 'w', encoding='utf-8') as file:
+          file.write(cleaned_content)
 
-        with open(file_path, 'w') as file:
-            file.write(cleaned_files)
-    except Exception as e:
-        print(f"An Error Occured :{e}")
-    
+  except Exception as e:
+      print(f"Error cleaning file: {e}")
+
 def main(argv=None):
-    parser = argparse.ArgumentParser()
-    parser.add_argument('filenames', nargs = '*', help='filenames to clean')
-    args = parser.parse_args(argv)
-    for file_path in args.filenames:
-        clean_files(file_path)
-    
-    return 0
+  print("Running clean_config_files.py")
+  parser = argparse.ArgumentParser()
+  parser.add_argument('filenames', nargs='*', help='Filenames to clean')
+  args = parser.parse_args(argv)
 
-if __name__ == "__main__":
-    import sys
-    sys.exit(main())
+  for file_path in args.filenames:
+      clean_file(file_path)
+
+  print("Finished running clean_config_files.py")
+
+if __name__ == '__main__':
+  import sys
+  sys.exit(main())
