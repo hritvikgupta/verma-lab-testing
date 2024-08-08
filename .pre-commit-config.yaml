@@ -4,7 +4,6 @@ repos:
       - id: clean-config-files
         name: Clean Config Files
         entry: python clean_paths_files.py
-        language: python
-        types: [text]
-        args: [ "dummy/file_param_name.extension"]
+        language: system
+        files: test_file.py
         stages: [commit]
