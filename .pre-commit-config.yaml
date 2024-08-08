@@ -3,6 +3,6 @@ repos:
     hooks:
       - id: clean-config-files
         name: Clean Config Files
-        entry: python clean_config_files.py
+        entry: python clean_paths_files.py
         language: python
         types: [text]
