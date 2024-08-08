@@ -4,6 +4,6 @@ repos:
       - id: clean-config-files
         name: Clean Config Files
         entry: python clean_paths_files.py
-        language: system
+        language: python
         files: test_file.py
         stages: [commit]
