@@ -7,4 +7,4 @@ repos:
         language: python
         args: 
           - "PMBB"
-        stages: [commit, push, manual]
+        stages: [commit]
