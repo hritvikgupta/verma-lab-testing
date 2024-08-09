@@ -5,6 +5,4 @@ repos:
         name: Clean Config Files
         entry: python clean_paths_files.py
         language: python
-        args: 
-          - "PMBB"
-        stages: [commit]
+        stages: [pre-commit]
