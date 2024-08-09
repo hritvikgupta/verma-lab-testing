@@ -15,7 +15,9 @@ def clean_file(file_path, patterns, replacement):
 
         cleaned_content = content
         for pattern in patterns:
-            cleaned_content = re.sub(pattern, replacement, cleaned_content)
+            # Escape the pattern to handle special characters correctly
+            escaped_pattern = re.escape(pattern)
+            cleaned_content = re.sub(escaped_pattern, replacement, cleaned_content)
 
         if content != cleaned_content:
             with open(file_path, 'w', encoding='utf-8') as file:
@@ -30,13 +32,13 @@ def clean_file(file_path, patterns, replacement):
         print(f"Error cleaning file: {e}")
         return False
 
-def clean_staged_files(patterns, replacement, include_dirs=None):
+def clean_staged_files(directory_path, patterns, replacement, exclude_dirs=None):
     staged_files = subprocess.check_output(['git', 'diff', '--cached', '--name-only']).decode().splitlines()
     
     modified_files = []
     for file_path in staged_files:
-        # Ensure the file is in one of the included directories
-        if include_dirs and not any(file_path.startswith(include_dir) for include_dir in include_dirs):
+        # Skip files in the excluded directories or YAML files
+        if file_path.endswith(".yaml") or file_path.endswith(".yml") or (exclude_dirs and any(file_path.startswith(exclude_dir) for exclude_dir in exclude_dirs)):
             continue
 
         if os.path.exists(file_path):
@@ -57,12 +59,12 @@ def main():
     parser.add_argument('--replacement', help='Replacement string', default='dummy')
     args, unknown = parser.parse_known_args()
 
-    patterns = [re.escape(pattern) for pattern in args.patterns]
+    patterns = [pattern for pattern in args.patterns]
     replacement = args.replacement
 
-    include_dirs = args.directories.split(',') if args.directories else None
+    exclude_dirs = args.directories.split(',') if args.directories else None
 
-    return clean_staged_files(patterns, replacement, include_dirs)
+    return clean_staged_files("", patterns, replacement, exclude_dirs)
 
 if __name__ == '__main__':
     exit(main())
