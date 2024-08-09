@@ -4,64 +4,54 @@ import argparse
 import subprocess
 
 def clean_file(file_path):
-    # Skip the clean_paths_files.py script itself
-    if file_path.endswith("clean_paths_files.py"):
-        return False
+  if file_path.endswith("clean_paths_files.py"):
+      return False
 
-    print(f"Cleaning file: {file_path}")
-    try:
-        with open(file_path, 'r', encoding='utf-8') as file:
-            content = file.read()
+  print(f"Cleaning file: {file_path}")
+  try:
+      with open(file_path, 'r', encoding='utf-8') as file:
+          content = file.read()
 
-        # Define the pattern and replacement
-        pattern = r'/PMBB/file_param_name.extension'
-        replacement = 'dummy/file_param_name.extension'
+      pattern = r'/PMBB/file_param_name.extension'
+      replacement = 'dummy/file_param_name.extension'
 
-        # Perform the replacement
-        cleaned_content = re.sub(pattern, replacement, content)
+      cleaned_content = re.sub(pattern, replacement, content)
 
-        if content != cleaned_content:
-            # Write the cleaned content back to the file
-            with open(file_path, 'w', encoding='utf-8') as file:
-                file.write(cleaned_content)
-            print(f"File modified: {file_path}")
-            return True
-        else:
-            print(f"No changes needed for file: {file_path}")
-            return False
+      if content != cleaned_content:
+          with open(file_path, 'w', encoding='utf-8') as file:
+              file.write(cleaned_content)
+          print(f"File modified: {file_path}")
+          return True
+      else:
+          print(f"No changes needed for file: {file_path}")
+          return False
 
-    except Exception as e:
-        print(f"Error cleaning file: {e}")
-        return False
+  except Exception as e:
+      print(f"Error cleaning file: {e}")
+      return False
 
-def clean_directory(directory_path):
-    modified_files = []
-    for root, _, files in os.walk(directory_path):
-        for file in files:
-            file_path = os.path.join(root, file)
-            if clean_file(file_path):
-                modified_files.append(file_path)
-    
-    if modified_files:
-        subprocess.check_call(["git", "add"] + modified_files)
-        print("Staged modified files.")
+def clean_staged_files(directory_path):
+  staged_files = subprocess.check_output(['git', 'diff', '--cached', '--name-only']).decode().splitlines()
+  
+  modified_files = []
+  for file_path in staged_files:
+      if file_path.startswith(directory_path) and os.path.exists(file_path):
+          if clean_file(file_path):
+              modified_files.append(file_path)
+  
+  if modified_files:
+      subprocess.check_call(["git", "add"] + modified_files)
+      print(f"Re-staged modified files in {directory_path} directory.")
+      print("Please review the changes before committing.")
+      return 1  # Return non-zero to abort the commit
+  return 0
 
-def main(argv=None):
-    print("Running clean_paths_files.py")
-    parser = argparse.ArgumentParser()
-    parser.add_argument('paths', nargs='*', help='Paths to directories or files to clean')
-    args = parser.parse_args(argv)
+def main():
+  parser = argparse.ArgumentParser()
+  parser.add_argument('directory', help='Directory to clean (e.g., PMBB)')
+  args, unknown = parser.parse_known_args()
 
-    for path in args.paths:
-        if os.path.isdir(path):
-            clean_directory(path)
-        elif os.path.isfile(path):
-            clean_file(path)
-        else:
-            print(f"Invalid path or file not found: {path}")
-
-    print("Finished running clean_paths_files.py")
+  return clean_staged_files(args.directory)
 
 if __name__ == '__main__':
-    import sys
-    sys.exit(main())
+  exit(main())
