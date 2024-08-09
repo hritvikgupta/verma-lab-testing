@@ -30,13 +30,13 @@ def clean_file(file_path, patterns, replacement):
         print(f"Error cleaning file: {e}")
         return False
 
-def clean_staged_files(directory_path, patterns, replacement, exclude_dirs=None):
+def clean_staged_files(directory_path, patterns, replacement, include_dirs=None):
     staged_files = subprocess.check_output(['git', 'diff', '--cached', '--name-only']).decode().splitlines()
     
     modified_files = []
     for file_path in staged_files:
-        # Skip files in the excluded directories or YAML files
-        if file_path.endswith(".yaml") or file_path.endswith(".yml") or (exclude_dirs and any(file_path.startswith(exclude_dir) for exclude_dir in exclude_dirs)):
+        # Ensure the file is in one of the included directories
+        if include_dirs and not any(file_path.startswith(include_dir) for include_dir in include_dirs):
             continue
 
         if os.path.exists(file_path):
@@ -60,9 +60,9 @@ def main():
     patterns = [re.escape(pattern) for pattern in args.patterns]
     replacement = args.replacement
 
-    exclude_dirs = args.directories.split(',') if args.directories else None
+    include_dirs = args.directories.split(',') if args.directories else None
 
-    return clean_staged_files("", patterns, replacement, exclude_dirs)
+    return clean_staged_files("", patterns, replacement, include_dirs)
 
 if __name__ == '__main__':
     exit(main())
