@@ -3,7 +3,7 @@ import os
 import argparse
 import subprocess
 
-def clean_file(file_path, directory_list):
+def clean_file(file_path, path_patterns):
     if file_path.endswith("clean_paths_files.py"):
         return False
 
@@ -13,9 +13,9 @@ def clean_file(file_path, directory_list):
             content = file.read()
 
         modified = False
-        for directory in directory_list:
-            pattern = rf'/{directory}/file_param_name.extension'
-            replacement = f'dummy/file_param_name.extension'
+        for path_pattern in path_patterns:
+            pattern = rf'{re.escape(path_pattern)}/file_param_name.extension'
+            replacement = 'dummy/file_param_name.extension'
 
             new_content = re.sub(pattern, replacement, content)
             if content != new_content:
@@ -35,13 +35,13 @@ def clean_file(file_path, directory_list):
         print(f"Error cleaning file: {e}")
         return False
 
-def clean_staged_files(directory_list):
+def clean_staged_files(path_patterns):
     staged_files = subprocess.check_output(['git', 'diff', '--cached', '--name-only']).decode().splitlines()
     
     modified_files = []
     for file_path in staged_files:
-        if any(file_path.startswith(directory) for directory in directory_list) and os.path.exists(file_path):
-            if clean_file(file_path, directory_list):
+        if os.path.exists(file_path):
+            if clean_file(file_path, path_patterns):
                 modified_files.append(file_path)
     
     if modified_files:
@@ -53,10 +53,10 @@ def clean_staged_files(directory_list):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('directories', nargs='+', help='List of directories to clean (e.g., PMBB home)')
+    parser.add_argument('paths', nargs='+', help='List of paths to clean (e.g., /PMBB /home/user)')
     args = parser.parse_args()
 
-    return clean_staged_files(args.directories)
+    return clean_staged_files(args.paths)
 
 if __name__ == '__main__':
     exit(main())
