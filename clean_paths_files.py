@@ -3,8 +3,9 @@ import os
 import argparse
 import subprocess
 
-def clean_file(file_path, patterns):
-    if file_path.endswith("clean_paths_files.py"):
+def clean_file(file_path, patterns, replacement):
+    # Exclude the .pre-commit-config.yaml file or any other file you want to exclude
+    if file_path.endswith(".pre-commit-config.yaml") or file_path.endswith("clean_paths_files.py"):
         return False
 
     print(f"Cleaning file: {file_path}")
@@ -12,18 +13,13 @@ def clean_file(file_path, patterns):
         with open(file_path, 'r', encoding='utf-8') as file:
             content = file.read()
 
-        # Replace each pattern in the content with 'dummy'
-        modified = False
+        cleaned_content = content
         for pattern in patterns:
-            replacement = 'dummy'
-            cleaned_content = re.sub(re.escape(pattern), replacement, content)
-            if content != cleaned_content:
-                content = cleaned_content
-                modified = True
+            cleaned_content = re.sub(pattern, replacement, cleaned_content)
 
-        if modified:
+        if content != cleaned_content:
             with open(file_path, 'w', encoding='utf-8') as file:
-                file.write(content)
+                file.write(cleaned_content)
             print(f"File modified: {file_path}")
             return True
         else:
@@ -34,39 +30,39 @@ def clean_file(file_path, patterns):
         print(f"Error cleaning file: {e}")
         return False
 
-def clean_staged_files(patterns, directories):
+def clean_staged_files(directory_path, patterns, replacement, exclude_dirs=None):
     staged_files = subprocess.check_output(['git', 'diff', '--cached', '--name-only']).decode().splitlines()
     
-    # Find files in the specified directories
-    files_in_directories = []
-    for directory in directories:
-        for root, _, files in os.walk(directory):
-            for file in files:
-                files_in_directories.append(os.path.join(root, file))
-    
-    # Combine the lists of staged files and files in directories
-    all_files = set(staged_files + files_in_directories)
-    
     modified_files = []
-    for file_path in all_files:
+    for file_path in staged_files:
+        # Skip files in the excluded directories
+        if exclude_dirs and any(file_path.startswith(exclude_dir) for exclude_dir in exclude_dirs):
+            continue
+
         if os.path.exists(file_path):
-            if clean_file(file_path, patterns):
+            if clean_file(file_path, patterns, replacement):
                 modified_files.append(file_path)
     
     if modified_files:
         subprocess.check_call(["git", "add"] + modified_files)
-        print("Re-staged modified files.")
+        print(f"Re-staged modified files.")
         print("Please review the changes before committing.")
         return 1  # Return non-zero to abort the commit
     return 0
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('patterns', nargs='+', help='List of patterns to replace with "dummy"')
-    parser.add_argument('--directories', nargs='*', default=[], help='List of directories to search for files')
+    parser.add_argument('patterns', nargs='+', help='Patterns to clean')
+    parser.add_argument('--directories', help='Comma-separated list of directories to search', default="")
+    parser.add_argument('--replacement', help='Replacement string', default='dummy')
     args, unknown = parser.parse_known_args()
 
-    return clean_staged_files(args.patterns, args.directories)
+    patterns = [re.escape(pattern) for pattern in args.patterns]
+    replacement = args.replacement
+
+    exclude_dirs = args.directories.split(',') if args.directories else None
+
+    return clean_staged_files("", patterns, replacement, exclude_dirs)
 
 if __name__ == '__main__':
     exit(main())
