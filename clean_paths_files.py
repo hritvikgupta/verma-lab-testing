@@ -4,8 +4,8 @@ import argparse
 import subprocess
 
 def clean_file(file_path, patterns, replacement):
-    # Exclude specific files, such as YAML config files
-    if file_path.endswith(".yaml") or file_path.endswith(".yml") or file_path.endswith("clean_paths_files.py"):
+    # Exclude specific files, such as the pre-commit YAML config file
+    if file_path.endswith(".yaml") or file_path.endswith(".yml") or file_path.endswith("clean_paths_files.py") or file_path.endswith(".pre-commit-config.yaml"):
         return False
 
     print(f"Cleaning file: {file_path}")
