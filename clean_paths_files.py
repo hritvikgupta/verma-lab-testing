@@ -3,7 +3,7 @@ import os
 import argparse
 import subprocess
 
-def clean_file(file_path, directories):
+def clean_file(file_path, directory_list):
     if file_path.endswith("clean_paths_files.py"):
         return False
 
@@ -13,15 +13,14 @@ def clean_file(file_path, directories):
             content = file.read()
 
         modified = False
-        for directory in directories:
-            pattern = fr'/{directory}/file_param_name.extension'  # Updated to use each directory argument
-            replacement = 'dummy/file_param_name.extension'
-            
-            # Replace content if pattern is found
+        for directory in directory_list:
+            pattern = rf'/{directory}/file_param_name.extension'
+            replacement = f'dummy/file_param_name.extension'
+
             new_content = re.sub(pattern, replacement, content)
-            if new_content != content:
-                content = new_content
+            if content != new_content:
                 modified = True
+                content = new_content
 
         if modified:
             with open(file_path, 'w', encoding='utf-8') as file:
@@ -36,13 +35,13 @@ def clean_file(file_path, directories):
         print(f"Error cleaning file: {e}")
         return False
 
-def clean_staged_files(directories):
+def clean_staged_files(directory_list):
     staged_files = subprocess.check_output(['git', 'diff', '--cached', '--name-only']).decode().splitlines()
     
     modified_files = []
     for file_path in staged_files:
-        if any(file_path.startswith(directory) for directory in directories) and os.path.exists(file_path):
-            if clean_file(file_path, directories):
+        if any(file_path.startswith(directory) for directory in directory_list) and os.path.exists(file_path):
+            if clean_file(file_path, directory_list):
                 modified_files.append(file_path)
     
     if modified_files:
