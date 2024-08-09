@@ -7,5 +7,5 @@ repos:
         language: python
         args: 
           - "PMBB"
-        stages: [push]
-        verbose: true
+        stages: [commit]
+        always-run: true
