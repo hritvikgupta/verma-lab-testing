@@ -8,4 +8,5 @@ repos:
         args: 
           - "PMBB"
         stages: [push]
-        always-run: true
+        always_run: true
+        verbose: true
