@@ -1,6 +1,6 @@
 - id: clean-config-files
   name: Clean Config Files
-  entry: python3 verma-lab-testing/clean_paths_files.py
+  entry: clean_paths_files.py
   language: system
   args: 
     - "PMBB"
