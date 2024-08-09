@@ -4,13 +4,17 @@ import argparse
 import subprocess
 
 def clean_file(file_path):
+    # Skip the clean_paths_files.py script itself
+    if file_path.endswith("clean_paths_files.py"):
+        return False
+
     print(f"Cleaning file: {file_path}")
     try:
         with open(file_path, 'r', encoding='utf-8') as file:
             content = file.read()
 
         # Define the pattern and replacement
-        pattern = r'dummy/file_param_name.extension'
+        pattern = r'/PMBB/file_param_name.extension'
         replacement = 'dummy/file_param_name.extension'
 
         # Perform the replacement
