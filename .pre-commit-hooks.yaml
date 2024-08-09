@@ -1,6 +1,6 @@
 - id: clean-config-files
   name: Clean Config Files
-  entry: python clean_paths_files.py
-  language: python
+  entry: python3 clean_paths_files.py
+  language: python3
   args: ["PMBB"]
   stages: [commit]
