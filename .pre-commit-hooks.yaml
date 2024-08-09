@@ -2,5 +2,6 @@
   name: Clean Config Files
   entry: python3 clean_paths_files.py
   language: system
-  args: ["/PMBB", "/home", "/var/data"]
+  args: ["/PMBB", "/home/user", "/var/data"]
   stages: [commit]
+  additional_dependencies: ["--directories=src,tests,configs"]
