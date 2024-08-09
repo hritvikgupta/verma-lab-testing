@@ -30,7 +30,7 @@ def clean_file(file_path, patterns, replacement):
         print(f"Error cleaning file: {e}")
         return False
 
-def clean_staged_files(directory_path, patterns, replacement, include_dirs=None):
+def clean_staged_files(patterns, replacement, include_dirs=None):
     staged_files = subprocess.check_output(['git', 'diff', '--cached', '--name-only']).decode().splitlines()
     
     modified_files = []
@@ -62,7 +62,7 @@ def main():
 
     include_dirs = args.directories.split(',') if args.directories else None
 
-    return clean_staged_files("", patterns, replacement, include_dirs)
+    return clean_staged_files(patterns, replacement, include_dirs)
 
 if __name__ == '__main__':
     exit(main())
