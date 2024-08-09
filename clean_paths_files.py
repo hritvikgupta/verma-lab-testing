@@ -3,7 +3,7 @@ import os
 import argparse
 import subprocess
 
-def clean_file(file_path, path_patterns):
+def clean_file(file_path, patterns):
     if file_path.endswith("clean_paths_files.py"):
         return False
 
@@ -12,15 +12,14 @@ def clean_file(file_path, path_patterns):
         with open(file_path, 'r', encoding='utf-8') as file:
             content = file.read()
 
+        # Replace each pattern in the content with 'dummy'
         modified = False
-        for path_pattern in path_patterns:
-            pattern = rf'{re.escape(path_pattern)}/file_param_name.extension'
-            replacement = 'dummy/file_param_name.extension'
-
-            new_content = re.sub(pattern, replacement, content)
-            if content != new_content:
+        for pattern in patterns:
+            replacement = 'dummy'
+            cleaned_content = re.sub(re.escape(pattern), replacement, content)
+            if content != cleaned_content:
+                content = cleaned_content
                 modified = True
-                content = new_content
 
         if modified:
             with open(file_path, 'w', encoding='utf-8') as file:
@@ -35,28 +34,28 @@ def clean_file(file_path, path_patterns):
         print(f"Error cleaning file: {e}")
         return False
 
-def clean_staged_files(path_patterns):
+def clean_staged_files(patterns):
     staged_files = subprocess.check_output(['git', 'diff', '--cached', '--name-only']).decode().splitlines()
     
     modified_files = []
     for file_path in staged_files:
         if os.path.exists(file_path):
-            if clean_file(file_path, path_patterns):
+            if clean_file(file_path, patterns):
                 modified_files.append(file_path)
     
     if modified_files:
         subprocess.check_call(["git", "add"] + modified_files)
-        print(f"Re-staged modified files.")
+        print("Re-staged modified files.")
         print("Please review the changes before committing.")
         return 1  # Return non-zero to abort the commit
     return 0
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('paths', nargs='+', help='List of paths to clean (e.g., /PMBB /home/user)')
-    args = parser.parse_args()
+    parser.add_argument('patterns', nargs='+', help='List of patterns to replace with "dummy"')
+    args, unknown = parser.parse_known_args()
 
-    return clean_staged_files(args.paths)
+    return clean_staged_files(args.patterns)
 
 if __name__ == '__main__':
     exit(main())
