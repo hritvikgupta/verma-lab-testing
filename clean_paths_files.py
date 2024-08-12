@@ -241,6 +241,7 @@ import os
 import argparse
 import subprocess
 import glob
+import logging
 
 def clean_file(file_path, patterns, replacement):
     # Exclude specific files, such as the pre-commit YAML config file
@@ -332,6 +333,8 @@ def main():
     return clean_files(patterns, replacement, include_dirs, args.enforce_all)
 
 if __name__ == '__main__':
-    exit(main())
+    # exit(main())
+    logging.basicConfig(filename='pre_commit.log', level=logging.INFO)
+    raise SystemExit(main())
 
 
