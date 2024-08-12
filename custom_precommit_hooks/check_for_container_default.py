@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import argparse
 from typing import Sequence
-
+import logging
 from custom_precommit_hooks.utils import added_files
 
 container_definers = [
@@ -79,4 +79,5 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 
 if __name__ == '__main__':
+    logging.basicConfig(filename='pre_commit.log', level=logging.INFO)
     raise SystemExit(main())
