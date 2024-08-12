@@ -3,6 +3,8 @@ from __future__ import annotations
 import argparse
 from typing import Sequence
 import logging
+import sys
+sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 from utils import added_files
 
 def find_string_in_files(
