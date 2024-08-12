@@ -6,6 +6,24 @@ import logging
 import sys
 import os
 
+
+# Configure logging to write to the pre-commit log file
+logging.basicConfig(filename='pre_commit.log', level=logging.INFO, format='%(message)s')
+
+# Get the absolute path of the current script
+current_path = os.path.abspath(__file__)
+
+# Get the directory containing the current script
+current_dir = os.path.dirname(current_path)
+
+# Log the directory path
+logging.info("Current directory: %s", current_dir)
+
+# Assuming utils.py is in the same directory, log its path
+utils_path = os.path.join(current_dir, 'utils.py')
+logging.info("Path to utils.py: %s", utils_path)
+
+
 from custom_precommit_hooks.utils import added_files
 
 
