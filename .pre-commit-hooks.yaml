@@ -8,7 +8,7 @@
 -   id: check-for-cluster-paths
     name: Check for cluster paths in all committed files
     description: prevents cluster paths from being leaked.
-    entry: check-files-for-strings
+    entry: python3 check-files-for-strings
     language: system
     args: [--search-string, "/project/", --quiet-skip-binary]
     stages: [commit, push, manual]
@@ -16,7 +16,7 @@
 -   id: check-for-home-paths
     name: Check for home directory paths in all committed files
     description: prevents home paths/names from being leaked.
-    entry: check-files-for-strings
+    entry: python3 check-files-for-strings
     language: system
     args: [--search-string, "/home/", --quiet-skip-binary]
     stages: [commit, push, manual]
@@ -24,7 +24,7 @@
 -   id: check-for-data-strings
     name: Check for PMBB strings in all committed files
     description: prevents missing usage of PMBB data (and paths) from being leaked.
-    entry: check-files-for-strings
+    entry: python3 check-files-for-strings
     language: system
     args: [--search-string, "PMBB", --case-insensitive, --quiet-skip-binary]
     stages: [commit, push, manual]
@@ -32,7 +32,7 @@
 -   id: check-added-binary-files
     name: Check for binary files in all committed files
     description: prevents binary files from being committed.
-    entry: check-added-binary-files
+    entry: python3 check-added-binary-files
     language: system
     args: [--enforce-all]
     stages: [commit, push, manual]
@@ -40,7 +40,7 @@
 -   id: check-for-container-default
     name: Check that containers are defined with a default value
     description: prevents containers pointing to personal repos from being committed.
-    entry: check-for-container-default
+    entry: python3 check-for-container-default
     language: system
     args: [--enforce-all]
     stages: [commit, push, manual]
