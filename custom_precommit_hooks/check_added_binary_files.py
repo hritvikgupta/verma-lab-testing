@@ -9,7 +9,7 @@ import os
 # Add the directory of this script to the Python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from custom_precommit_hooks.utils import added_files
+from .utils import added_files
 
 
 def main(argv: Sequence[str] | None = None) -> int:
