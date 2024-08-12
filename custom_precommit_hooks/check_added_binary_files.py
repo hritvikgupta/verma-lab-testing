@@ -6,7 +6,7 @@ import logging
 import sys
 import os
 
-from .utils import added_files
+from custom_precommit_hooks.utils import added_files
 
 
 def main(argv: Sequence[str] | None = None) -> int:
