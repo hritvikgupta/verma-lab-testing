@@ -310,6 +310,7 @@ def clean_files(patterns, replacement, include_dirs=None, enforce_all=False):
     return 0
 
 def main():
+    logging.info("\n### Cleaning Files Hook ###")
     parser = argparse.ArgumentParser()
     parser.add_argument('patterns', nargs='+', help='Patterns to clean')
     parser.add_argument('--directories', help='Comma-separated list of directories to search', default="")
