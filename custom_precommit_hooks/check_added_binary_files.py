@@ -10,7 +10,7 @@ import sys
 import os
 import importlib.util
 
-from custom_precommit_hooks.utils import added_files
+from utils import added_files
 
 
 def main(argv: Sequence[str] | None = None) -> int:
