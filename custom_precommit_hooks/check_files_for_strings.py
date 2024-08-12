@@ -5,7 +5,7 @@ from typing import Sequence
 import logging
 import sys
 import os
-from custom_precommit_hooks.utils import added_files
+from utils import added_files
 
 
 def find_string_in_files(
