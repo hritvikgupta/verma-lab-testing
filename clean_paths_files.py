@@ -165,12 +165,15 @@ def clean_file(file_path, patterns, replacement):
 
       cleaned_content = content
       for pattern in patterns:
+          # Create a more flexible regex pattern
+          flexible_pattern = re.compile(rf'(?i)(?:^|[/\\])(?:{re.escape(pattern)}(?:_\w+)?)(?:/|\\|$).*?(?=[\'"\s]|$)')
+
           def replace_path(match):
               full_path = match.group(0)
-              filename = os.path.basename(full_path)
+              filename = os.path.basename(full_path.rstrip('/\\'))
               return os.path.join(replacement, filename)
 
-          cleaned_content = re.sub(f"{pattern}[^'\"\n]+", replace_path, cleaned_content)
+          cleaned_content = flexible_pattern.sub(replace_path, cleaned_content)
 
       if content != cleaned_content:
           with open(file_path, 'w', encoding='utf-8') as file:
