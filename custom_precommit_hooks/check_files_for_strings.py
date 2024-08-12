@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 from typing import Sequence
 import logging
-from custom_precommit_hooks.utils import added_files
+from utils import added_files
 
 def find_string_in_files(
         filenames: Sequence[str],
