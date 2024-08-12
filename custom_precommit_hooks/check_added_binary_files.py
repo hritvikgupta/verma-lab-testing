@@ -3,6 +3,12 @@ from __future__ import annotations
 import argparse
 from typing import Sequence
 import logging
+import sys
+import os
+
+# Add the directory of this script to the Python path
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 from custom_precommit_hooks.utils import added_files
 
 
