@@ -10,18 +10,7 @@ import sys
 import os
 import importlib.util
 
-# Load the utils.py module from the specified path
-utils_path = sys.argv.pop(1)  # Assume the path to utils.py is passed as the first argument
-spec = importlib.util.spec_from_file_location("utils", utils_path)
-utils = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(utils)
-
-# Now you can use the functions from utils.py
-added_files = utils.added_files
-
-
-
-# from custom_precommit_hooks.utils import added_files
+from custom_precommit_hooks.utils import added_files
 
 
 def main(argv: Sequence[str] | None = None) -> int:
