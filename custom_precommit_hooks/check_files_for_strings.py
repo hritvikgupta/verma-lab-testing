@@ -5,9 +5,8 @@ from typing import Sequence
 import logging
 import sys
 import os
-sys.path.append(os.path.dirname(os.path.realpath(__file__)))
+from custom_precommit_hooks.utils import added_files
 
-from utils import added_files
 
 def find_string_in_files(
         filenames: Sequence[str],
