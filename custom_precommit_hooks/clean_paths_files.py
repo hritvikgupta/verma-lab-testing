@@ -370,7 +370,11 @@ def clean_file(filepath, patterns, replacement):
 
         cleaned_content = content
         for pattern in patterns:
-            flexible_pattern = re.compile(rf'(?i)(?:^|[/\\])(?:{re.escape(pattern)}(?:_\w+)?)(?:/|\\|$).*?(?=[\'"\s]|$)')
+            # Adjusted regex for more specific matching
+            flexible_pattern = re.compile(
+                rf'(?i)(?:{re.escape(pattern)}(?:_\w+)?)(?=\s*=)',
+                re.MULTILINE
+            )
             matches = flexible_pattern.findall(content)
             if matches:
                 logging.info(f"Pattern '{pattern}' found in {filepath}: {matches}")
@@ -379,8 +383,8 @@ def clean_file(filepath, patterns, replacement):
 
             def replace_path(match):
                 full_path = match.group(0)
-                filename = os.path.basename(full_path.rstrip('/\\'))
-                return os.path.join(replacement, filename)
+                logging.info(f"Replacing path: {full_path} with {replacement}")
+                return replacement
 
             cleaned_content = flexible_pattern.sub(replace_path, cleaned_content)
 
