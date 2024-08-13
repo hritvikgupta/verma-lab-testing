@@ -361,10 +361,6 @@ def clean_file(filepath, patterns, replacement):
     if is_binary_file(filepath):
         logging.info(f"Skipping binary file: {filepath}")
         return
-def clean_file(file_path, patterns, replacement):
-    if is_binary_file(file_path):
-        logging.info(f"Skipping binary file: {file_path}")
-        return False
     
     try:
         with open(file_path, 'r', encoding='utf-8') as file:
