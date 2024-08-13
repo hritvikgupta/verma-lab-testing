@@ -4,7 +4,6 @@ import argparse
 from typing import Sequence
 import logging
 import sys
-import os
 from utils import added_files
 
 # Setup logging
@@ -24,8 +23,12 @@ def find_string_in_files(
 
     filenames_filtered = set(filenames)
 
+    logger.info(f"Initial filenames: {filenames}")
+
     if not enforce_all:
         filenames_filtered &= added_files()
+
+    logger.info(f"Filtered filenames: {filenames_filtered}")
 
     for filename in filenames_filtered:
         logger.info(f"Processing file: {filename}")
@@ -76,6 +79,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         help='Skip binary files with no reporting (otherwise will report that the file was skipped).',
     )
     args = parser.parse_args(argv)
+
+    logger.info(f"Received arguments: {args}")
 
     if args.case_insensitive:
         args.search_string = args.search_string.lower()
