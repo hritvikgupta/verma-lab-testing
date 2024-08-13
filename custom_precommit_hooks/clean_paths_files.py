@@ -360,22 +360,22 @@ def is_binary_file(filepath):
 def clean_file(filepath, patterns, replacement):
     if is_binary_file(filepath):
         logging.info(f"Skipping binary file: {filepath}")
-        return
+        return False
     
     try:
-        with open(file_path, 'r', encoding='utf-8') as file:
+        with open(filepath, 'r', encoding='utf-8') as file:
             content = file.read()
 
-        logging.info(f"Original content of {file_path}:\n{content[:200]}")  # Show first 200 characters for brevity
+        logging.info(f"Original content of {filepath}:\n{content[:200]}")  # Show first 200 characters for brevity
 
         cleaned_content = content
         for pattern in patterns:
             flexible_pattern = re.compile(rf'(?i)(?:^|[/\\])(?:{re.escape(pattern)}(?:_\w+)?)(?:/|\\|$).*?(?=[\'"\s]|$)')
             matches = flexible_pattern.findall(content)
             if matches:
-                logging.info(f"Pattern '{pattern}' found in {file_path}: {matches}")
+                logging.info(f"Pattern '{pattern}' found in {filepath}: {matches}")
             else:
-                logging.info(f"Pattern '{pattern}' not found in {file_path}")
+                logging.info(f"Pattern '{pattern}' not found in {filepath}")
 
             def replace_path(match):
                 full_path = match.group(0)
@@ -385,17 +385,17 @@ def clean_file(filepath, patterns, replacement):
             cleaned_content = flexible_pattern.sub(replace_path, cleaned_content)
 
         if content != cleaned_content:
-            logging.info(f"Modified content of {file_path}:\n{cleaned_content[:200]}")  # Show first 200 characters for brevity
-            with open(file_path, 'w', encoding='utf-8') as file:
+            logging.info(f"Modified content of {filepath}:\n{cleaned_content[:200]}")  # Show first 200 characters for brevity
+            with open(filepath, 'w', encoding='utf-8') as file:
                 file.write(cleaned_content)
-            logging.info(f"File modified: {file_path}")
+            logging.info(f"File modified: {filepath}")
             return True
         else:
-            logging.info(f"No changes needed for file: {file_path}")
+            logging.info(f"No changes needed for file: {filepath}")
             return False
 
     except Exception as e:
-        logging.error(f"Error cleaning file {file_path}: {e}")
+        logging.error(f"Error cleaning file {filepath}: {e}")
         return False
 
 
@@ -404,21 +404,21 @@ def clean_files(patterns, replacement, include_dirs=None, enforce_all=False):
         all_files = []
         for root, _, files in os.walk('.'):
             for file in files:
-                file_path = os.path.join(root, file)
+                filepath = os.path.join(root, file)
                 if include_dirs:
-                    if any(os.path.abspath(file_path).startswith(os.path.abspath(include_dir)) for include_dir in include_dirs):
-                        all_files.append(file_path)
+                    if any(os.path.abspath(filepath).startswith(os.path.abspath(include_dir)) for include_dir in include_dirs):
+                        all_files.append(filepath)
                 else:
-                    all_files.append(file_path)
+                    all_files.append(filepath)
         relevant_files = all_files
     else:
         relevant_files = subprocess.check_output(['git', 'diff', '--cached', '--name-only']).decode().splitlines()
 
     modified_files = []
-    for file_path in relevant_files:
-        if os.path.exists(file_path):
-            if clean_file(file_path, patterns, replacement):
-                modified_files.append(file_path)
+    for filepath in relevant_files:
+        if os.path.exists(filepath):
+            if clean_file(filepath, patterns, replacement):
+                modified_files.append(filepath)
     
     if modified_files:
         subprocess.check_call(["git", "add"] + modified_files)
@@ -461,5 +461,6 @@ def main():
 if __name__ == '__main__':
     logging.basicConfig(filename='pre_commit.log', level=logging.INFO)
     raise SystemExit(main())
+
 
 
