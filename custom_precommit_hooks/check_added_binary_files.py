@@ -30,7 +30,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     retv = 0
 
     if not args.enforce_all:
-        args.filenames &= added_files()
+        args.filenames = set(args.filenames)  # Convert to set
+        args.filenames &= added_files()       # Perform intersection
 
     binary_files = []
 
