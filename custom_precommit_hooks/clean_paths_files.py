@@ -347,24 +347,24 @@ import logging
 import json
 
 def clean_file(file_path, patterns, replacement):
-    # Exclude specific files, such as the pre-commit YAML config file
-    if file_path.endswith(".yaml") or file_path.endswith(".yml") or file_path.endswith("clean_paths_files.py") or file_path.endswith(".pre-commit-config.yaml"):
+    if is_binary_file(file_path):
+        logging.info(f"Skipping binary file: {file_path}")
         return False
-
-    # Skip binary files by checking file extensions
-    if not os.path.splitext(file_path)[1] in ['.md', '.sh', '.config', '.smk', '.nf', '.py', '.bsub', '.txt', '.yml', '.json']:
-        logging.info(f"Skipping non-text file: {file_path}")
-        return False
-
-    logging.info(f"Cleaning file: {file_path}")
+    
     try:
         with open(file_path, 'r', encoding='utf-8') as file:
             content = file.read()
 
+        logging.info(f"Original content of {file_path}:\n{content[:200]}")  # Show first 200 characters for brevity
+
         cleaned_content = content
         for pattern in patterns:
-            logging.info(f"Applying pattern: {pattern}")
             flexible_pattern = re.compile(rf'(?i)(?:^|[/\\])(?:{re.escape(pattern)}(?:_\w+)?)(?:/|\\|$).*?(?=[\'"\s]|$)')
+            matches = flexible_pattern.findall(content)
+            if matches:
+                logging.info(f"Pattern '{pattern}' found in {file_path}: {matches}")
+            else:
+                logging.info(f"Pattern '{pattern}' not found in {file_path}")
 
             def replace_path(match):
                 full_path = match.group(0)
@@ -374,6 +374,7 @@ def clean_file(file_path, patterns, replacement):
             cleaned_content = flexible_pattern.sub(replace_path, cleaned_content)
 
         if content != cleaned_content:
+            logging.info(f"Modified content of {file_path}:\n{cleaned_content[:200]}")  # Show first 200 characters for brevity
             with open(file_path, 'w', encoding='utf-8') as file:
                 file.write(cleaned_content)
             logging.info(f"File modified: {file_path}")
@@ -383,8 +384,9 @@ def clean_file(file_path, patterns, replacement):
             return False
 
     except Exception as e:
-        logging.error(f"Error cleaning file: {e}")
+        logging.error(f"Error cleaning file {file_path}: {e}")
         return False
+
 
 def clean_files(patterns, replacement, include_dirs=None, enforce_all=False):
     if enforce_all:
