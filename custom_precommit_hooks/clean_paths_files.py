@@ -1500,29 +1500,11 @@ def clean_file(filepath, patterns):
 
                 cleaned_content = flexible_pattern.sub(replace_path, cleaned_content)
             else:
-                # Handle individual list elements replacement
-                list_pattern = re.compile(
-                    rf'(\[.*?\])',
-                    flags
-                )
-
-                def replace_list_elements(match):
-                    list_content = match.group(0)
-                    # Replace only the elements that match the pattern
-                    element_pattern = re.compile(
-                        rf'(?P<element>{pattern})',
-                        flags
-                    )
-                    return element_pattern.sub(replacement, list_content)
-
-                cleaned_content = list_pattern.sub(replace_list_elements, cleaned_content)
-
                 # Pattern for matching variable assignment
                 assignment_pattern = re.compile(
                     rf'(?P<key>{pattern})(\s*=\s*)(?P<value>[^\n]*)',
                     flags
                 )
-
                 def replace_value(match):
                     key = match.group('key')
                     logging.info(f"Replacing value for key '{key}' with {replacement}")
@@ -1543,6 +1525,7 @@ def clean_file(filepath, patterns):
     except Exception as e:
         logging.error(f"Error cleaning file {filepath}: {e}")
         return False
+
 
 def clean_files(patterns, include_dirs=None, enforce_all=False):
     if enforce_all:
