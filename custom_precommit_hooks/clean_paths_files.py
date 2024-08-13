@@ -1284,6 +1284,162 @@
 #     logging.basicConfig(filename='pre_commit.log', level=logging.INFO)
 #     raise SystemExit(main())
 
+# import re
+# import os
+# import argparse
+# import subprocess
+# import glob
+# import logging
+# import json
+
+# def is_binary_file(filepath):
+#     try:
+#         with open(filepath, 'rb') as file:
+#             for block in iter(lambda: file.read(1024), b''):
+#                 if b'\0' in block:
+#                     return True
+#         return False
+#     except Exception as e:
+#         logging.error(f"Error checking if file is binary: {e}")
+#         return False  # Assume non-binary on error
+
+# def should_skip_file(filepath):
+#     # Skip JSON and YAML configuration files
+#     if filepath.endswith('.json') or filepath.endswith('.yaml') or filepath.endswith('.yml'):
+#         logging.info(f"Skipping configuration file: {filepath}")
+#         return True
+#     return False
+
+# def clean_file(filepath, patterns):
+#     if is_binary_file(filepath):
+#         logging.info(f"Skipping binary file: {filepath}")
+#         return False
+
+#     if should_skip_file(filepath):
+#         return False
+    
+#     try:
+#         with open(filepath, 'r', encoding='utf-8') as file:
+#             content = file.read()
+
+#         logging.info(f"Original content of {filepath}:\n{content[:200]}")  # Show first 200 characters for brevity
+
+#         cleaned_content = content
+#         for pattern, options in patterns.items():
+#             replacement = options["replacement"]
+#             inplace = options.get("inplace", False)
+#             case_sensitive = options.get("case_sensitive", True)
+            
+#             # Determine regex flags based on case sensitivity
+#             flags = re.MULTILINE
+#             if not case_sensitive:
+#                 flags |= re.IGNORECASE
+            
+#             if inplace:
+#                 # Pattern to match the entire path up to the file name and extension
+#                 flexible_pattern = re.compile(
+#                     rf'({re.escape(pattern)})([^\s\'"]*\.[^\s\'"]+)',
+#                     flags
+#                 )
+#             else:
+#                 flexible_pattern = re.compile(
+#                     rf'(?P<key>{pattern})(\s*=\s*)(?P<value>[^\n]*)',
+#                     flags
+#                 )
+
+#             matches = flexible_pattern.findall(content)
+#             if matches:
+#                 logging.info(f"Pattern '{pattern}' found in {filepath}: {matches}")
+#             else:
+#                 logging.info(f"Pattern '{pattern}' not found in {filepath}")
+
+#             def replace_value(match):
+#                 if inplace:
+#                     # Replace the full path except the last part (filename.extension)
+#                     original_path = match.group(0)
+#                     filename = os.path.basename(match.group(2))
+#                     new_path = os.path.join(replacement, filename)
+#                     logging.info(f"Replacing in-place '{original_path}' with '{new_path}'")
+#                     return new_path
+#                 else:
+#                     key = match.group('key')
+#                     logging.info(f"Replacing value for key '{key}' with '{replacement}'")
+#                     return f"{key} = {replacement}"
+
+#             cleaned_content = flexible_pattern.sub(replace_value, cleaned_content)
+
+#         if content != cleaned_content:
+#             logging.info(f"Modified content of {filepath}:\n{cleaned_content[:200]}")  # Show first 200 characters for brevity
+#             with open(filepath, 'w', encoding='utf-8') as file:
+#                 file.write(cleaned_content)
+#             logging.info(f"File modified: {filepath}")
+#             return True
+#         else:
+#             logging.info(f"No changes needed for file: {filepath}")
+#             return False
+
+#     except Exception as e:
+#         logging.error(f"Error cleaning file {filepath}: {e}")
+#         return False
+
+
+# def clean_files(patterns, include_dirs=None, enforce_all=False):
+#     if enforce_all:
+#         all_files = []
+#         for root, _, files in os.walk('.'):
+#             for file in files:
+#                 filepath = os.path.join(root, file)
+#                 if include_dirs:
+#                     if any(os.path.abspath(filepath).startswith(os.path.abspath(include_dir)) for include_dir in include_dirs):
+#                         all_files.append(filepath)
+#                 else:
+#                     all_files.append(filepath)
+#         relevant_files = all_files
+#     else:
+#         relevant_files = subprocess.check_output(['git', 'diff', '--cached', '--name-only']).decode().splitlines()
+
+#     modified_files = []
+#     for filepath in relevant_files:
+#         if os.path.exists(filepath):
+#             if clean_file(filepath, patterns):
+#                 modified_files.append(filepath)
+    
+#     if modified_files:
+#         subprocess.check_call(["git", "add"] + modified_files)
+#         logging.info(f"Re-staged modified files.")
+#         logging.info("Please review the changes before committing.")
+#         return 1  # Return non-zero to abort the commit
+#     return 0
+
+# def main():
+#     logging.info("\n### Cleaning Files Hook ###")
+#     parser = argparse.ArgumentParser()
+#     parser.add_argument('--json-config', help='Path to JSON config file', type=str)
+#     parser.add_argument('--enforce-all', action='store_true', help='Enforce cleaning all relevant files, not just staged files')
+#     args, unknown = parser.parse_known_args()
+
+#     if args.json_config:
+#         with open(args.json_config, 'r') as f:
+#             config = json.load(f)
+#             patterns = config['patterns']
+#             include_dirs = config['directories']
+#             logging.info(f"Loaded JSON config: {config}")
+#     else:
+#         logging.error("JSON config file is required.")
+#         return 1
+
+#     if include_dirs:
+#         expanded_dirs = []
+#         for dir_pattern in include_dirs:
+#             matching_dirs = glob.glob(dir_pattern)
+#             expanded_dirs.extend(matching_dirs)
+#         include_dirs = expanded_dirs
+
+#     return clean_files(patterns, include_dirs, args.enforce_all)
+
+# if __name__ == '__main__':
+#     logging.basicConfig(filename='pre_commit.log', level=logging.INFO)
+#     raise SystemExit(main())
 import re
 import os
 import argparse
@@ -1303,19 +1459,9 @@ def is_binary_file(filepath):
         logging.error(f"Error checking if file is binary: {e}")
         return False  # Assume non-binary on error
 
-def should_skip_file(filepath):
-    # Skip JSON and YAML configuration files
-    if filepath.endswith('.json') or filepath.endswith('.yaml') or filepath.endswith('.yml'):
-        logging.info(f"Skipping configuration file: {filepath}")
-        return True
-    return False
-
 def clean_file(filepath, patterns):
     if is_binary_file(filepath):
         logging.info(f"Skipping binary file: {filepath}")
-        return False
-
-    if should_skip_file(filepath):
         return False
     
     try:
@@ -1326,47 +1472,39 @@ def clean_file(filepath, patterns):
 
         cleaned_content = content
         for pattern, options in patterns.items():
-            replacement = options["replacement"]
+            replacement = options.get("replacement")
             inplace = options.get("inplace", False)
             case_sensitive = options.get("case_sensitive", True)
-            
-            # Determine regex flags based on case sensitivity
-            flags = re.MULTILINE
-            if not case_sensitive:
-                flags |= re.IGNORECASE
-            
+
+            # Adjust regex pattern for case sensitivity
+            flags = 0 if case_sensitive else re.IGNORECASE
+
+            # Pattern for matching variable assignment
+            assignment_pattern = re.compile(
+                rf'(?P<key>{pattern})(\s*=\s*)(?P<value>[^\n]*)',
+                flags
+            )
+
             if inplace:
-                # Pattern to match the entire path up to the file name and extension
+                # Pattern for matching and replacing entire paths (inplace)
                 flexible_pattern = re.compile(
-                    rf'({re.escape(pattern)})([^\s\'"]*\.[^\s\'"]+)',
+                    rf'(?P<path>{pattern}.*?)(?P<filename>[^/\\]+$)',
                     flags
                 )
-            else:
-                flexible_pattern = re.compile(
-                    rf'(?P<key>{pattern})(\s*=\s*)(?P<value>[^\n]*)',
-                    flags
-                )
-
-            matches = flexible_pattern.findall(content)
-            if matches:
-                logging.info(f"Pattern '{pattern}' found in {filepath}: {matches}")
-            else:
-                logging.info(f"Pattern '{pattern}' not found in {filepath}")
-
-            def replace_value(match):
-                if inplace:
-                    # Replace the full path except the last part (filename.extension)
-                    original_path = match.group(0)
-                    filename = os.path.basename(match.group(2))
+                def replace_path(match):
+                    filename = match.group('filename')
                     new_path = os.path.join(replacement, filename)
-                    logging.info(f"Replacing in-place '{original_path}' with '{new_path}'")
+                    logging.info(f"Replacing path: {match.group(0)} with {new_path}")
                     return new_path
-                else:
+
+                cleaned_content = flexible_pattern.sub(replace_path, cleaned_content)
+            else:
+                def replace_value(match):
                     key = match.group('key')
-                    logging.info(f"Replacing value for key '{key}' with '{replacement}'")
+                    logging.info(f"Replacing value for key '{key}' with {replacement}")
                     return f"{key} = {replacement}"
 
-            cleaned_content = flexible_pattern.sub(replace_value, cleaned_content)
+                cleaned_content = assignment_pattern.sub(replace_value, cleaned_content)
 
         if content != cleaned_content:
             logging.info(f"Modified content of {filepath}:\n{cleaned_content[:200]}")  # Show first 200 characters for brevity
