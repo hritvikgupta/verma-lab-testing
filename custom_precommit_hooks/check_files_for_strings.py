@@ -7,6 +7,9 @@ import sys
 import os
 from utils import added_files
 
+# Setup logging
+logging.basicConfig(filename='pre_commit.log', level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 def find_string_in_files(
         filenames: Sequence[str],
@@ -16,8 +19,6 @@ def find_string_in_files(
         case_insensitive: bool = False,
         quiet_skip_binary: bool = False,
 ) -> int:
-    # Find all files in the list of files pre-commit tells us about
-    # and check if they contain a search_string using grep
     retv = 0
     bad_files = []
 
@@ -27,21 +28,24 @@ def find_string_in_files(
         filenames_filtered &= added_files()
 
     for filename in filenames_filtered:
-        with open(filename, 'r') as f:
-            try:
+        logger.info(f"Processing file: {filename}")
+        try:
+            with open(filename, 'r') as f:
                 content = f.read()
                 if case_insensitive:
                     content = content.lower()
                 if search_string in content:
                     bad_files.append(filename)
-                    # TODO: consider reporting line number and line itself
+                    logger.info(f"Found '{search_string}' in file: {filename}")
             
-            except UnicodeDecodeError:
-                if not quiet_skip_binary:
-                    print(f'File {filename} is not a plaintext file, skipping...')
+        except UnicodeDecodeError:
+            if not quiet_skip_binary:
+                logger.info(f'File {filename} is not a plaintext file, skipping...')
+                print(f'File {filename} is not a plaintext file, skipping...')
 
     if bad_files:
         for bad_file in bad_files:
+            logger.info(f"Search string '{search_string}' found in: {bad_file}")
             print(f'Search string {search_string} found in: {bad_file}')
         retv = 1
 
@@ -86,5 +90,4 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 
 if __name__ == '__main__':
-    logging.basicConfig(filename='pre_commit.log', level=logging.INFO)
     raise SystemExit(main())
