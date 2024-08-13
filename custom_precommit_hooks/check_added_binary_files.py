@@ -12,8 +12,13 @@ import importlib.util
 
 from utils import added_files
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 def main(argv: Sequence[str] | None = None) -> int:
+
+    logger.info("Running check-added-binart-files hook")
+
     parser = argparse.ArgumentParser()
     
     parser.add_argument(
