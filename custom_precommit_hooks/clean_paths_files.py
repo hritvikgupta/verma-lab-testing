@@ -347,16 +347,23 @@ import logging
 import json
 
 def clean_file(file_path, patterns, replacement):
+    # Exclude specific files, such as the pre-commit YAML config file
     if file_path.endswith(".yaml") or file_path.endswith(".yml") or file_path.endswith("clean_paths_files.py") or file_path.endswith(".pre-commit-config.yaml"):
         return False
 
-    print(f"Cleaning file: {file_path}")
+    # Skip binary files by checking file extensions
+    if not os.path.splitext(file_path)[1] in ['.md', '.sh', '.config', '.smk', '.nf', '.py', '.bsub', '.txt', '.yml', '.json']:
+        logging.info(f"Skipping non-text file: {file_path}")
+        return False
+
+    logging.info(f"Cleaning file: {file_path}")
     try:
         with open(file_path, 'r', encoding='utf-8') as file:
             content = file.read()
 
         cleaned_content = content
         for pattern in patterns:
+            logging.info(f"Applying pattern: {pattern}")
             flexible_pattern = re.compile(rf'(?i)(?:^|[/\\])(?:{re.escape(pattern)}(?:_\w+)?)(?:/|\\|$).*?(?=[\'"\s]|$)')
 
             def replace_path(match):
@@ -369,14 +376,14 @@ def clean_file(file_path, patterns, replacement):
         if content != cleaned_content:
             with open(file_path, 'w', encoding='utf-8') as file:
                 file.write(cleaned_content)
-            print(f"File modified: {file_path}")
+            logging.info(f"File modified: {file_path}")
             return True
         else:
-            print(f"No changes needed for file: {file_path}")
+            logging.info(f"No changes needed for file: {file_path}")
             return False
 
     except Exception as e:
-        print(f"Error cleaning file: {e}")
+        logging.error(f"Error cleaning file: {e}")
         return False
 
 def clean_files(patterns, replacement, include_dirs=None, enforce_all=False):
@@ -402,9 +409,9 @@ def clean_files(patterns, replacement, include_dirs=None, enforce_all=False):
     
     if modified_files:
         subprocess.check_call(["git", "add"] + modified_files)
-        print(f"Re-staged modified files.")
-        print("Please review the changes before committing.")
-        return 1
+        logging.info(f"Re-staged modified files.")
+        logging.info("Please review the changes before committing.")
+        return 1  # Return non-zero to abort the commit
     return 0
 
 def main():
@@ -423,6 +430,7 @@ def main():
             patterns = [re.escape(pattern) for pattern in config['patterns']]
             replacement = config['replacement']
             include_dirs = config['directories']
+            logging.info(f"Loaded JSON config: {config}")
     else:
         patterns = [re.escape(pattern) for pattern in args.patterns]
         replacement = args.replacement
@@ -440,6 +448,5 @@ def main():
 if __name__ == '__main__':
     logging.basicConfig(filename='pre_commit.log', level=logging.INFO)
     raise SystemExit(main())
-
 
 
