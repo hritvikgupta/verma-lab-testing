@@ -346,6 +346,21 @@ import glob
 import logging
 import json
 
+def is_binary_file(filepath):
+    try:
+        with open(filepath, 'rb') as file:
+            for block in iter(lambda: file.read(1024), b''):
+                if b'\0' in block:
+                    return True
+        return False
+    except Exception as e:
+        logging.error(f"Error checking if file is binary: {e}")
+        return False  # Assume non-binary on error
+
+def clean_file(filepath, patterns, replacement):
+    if is_binary_file(filepath):
+        logging.info(f"Skipping binary file: {filepath}")
+        return
 def clean_file(file_path, patterns, replacement):
     if is_binary_file(file_path):
         logging.info(f"Skipping binary file: {file_path}")
