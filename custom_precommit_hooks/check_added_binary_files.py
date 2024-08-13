@@ -6,10 +6,6 @@ import logging
 import sys
 import os
 
-import sys
-import os
-import importlib.util
-
 from utils import added_files
 
 logging.basicConfig(level=logging.INFO)
@@ -17,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 def main(argv: Sequence[str] | None = None) -> int:
 
-    logger.info("Running check-added-binart-files hook")
+    logger.info("Running check-added-binary-files hook")
 
     parser = argparse.ArgumentParser()
     
@@ -45,19 +41,18 @@ def main(argv: Sequence[str] | None = None) -> int:
     is_binary_string = lambda bytes: bool(bytes.translate(None, textchars))
 
     for filename in args.filenames:
+        logger.info(f"Processing file: {filename}")
         with open(filename, 'rb') as f:
             if is_binary_string(f.read(1024)):
                 binary_files.append(filename)
 
-    if(binary_files):
+    if binary_files:
         for binary_file in binary_files:
+            logger.info(f'Binary file found: {binary_file}')
             print(f'Binary file found: {binary_file}')
         retv = 1
 
     return retv
-
-    
-
 
 if __name__ == '__main__':
     logging.basicConfig(filename='pre_commit.log', level=logging.INFO)
