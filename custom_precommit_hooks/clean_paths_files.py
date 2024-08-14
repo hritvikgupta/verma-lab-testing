@@ -1749,67 +1749,77 @@ def is_binary_file(filepath):
         return False  # Assume non-binary on error
 
 def clean_file(filepath, patterns):
-  # Skip .json and .yaml files
-  if filepath.endswith(('.json', '.yaml', '.yml')):
-      logging.info(f"Skipping file: {filepath}")
-      return False
+    if filepath.endswith(('.json', '.yaml', '.yml')):
+        logging.info(f"Skipping file: {filepath}")
+        return False
 
-  if is_binary_file(filepath):
-      logging.info(f"Skipping binary file: {filepath}")
-      return False
-  
-  try:
-      with open(filepath, 'r', encoding='utf-8') as file:
-          content = file.read()
+    if is_binary_file(filepath):
+        logging.info(f"Skipping binary file: {filepath}")
+        return False
 
-      logging.info(f"Original content of {filepath}:\n{content[:200]}")  # Show first 200 characters for brevity
+    try:
+        with open(filepath, 'r', encoding='utf-8') as file:
+            content = file.read()
 
-      cleaned_content = content
-      for pattern, options in patterns.items():
-          replacement = options.get("replacement")
-          inplace = options.get("inplace", False)
-          case_sensitive = options.get("case_sensitive", True)
+        logging.info(f"Original content of {filepath}:\n{content[:200]}")
 
-          # Adjust regex pattern for case sensitivity
-          flags = 0 if case_sensitive else re.IGNORECASE
+        # To track changes
+        cleaned_content = content
+        already_replaced = set()
 
-          if inplace:
-              # Pattern for matching and replacing specific paths
-              flexible_pattern = re.compile(
-                  rf'(^|[^\w/]){re.escape(pattern)}(/|$)',
-                  flags
-              )
-              def replace_path(match):
-                  # Replace only the matched pattern, preserving surrounding characters
-                  return f"{match.group(1)}{replacement}{match.group(2)}"
+        for pattern, options in patterns.items():
+            replacement = options.get("replacement")
+            inplace = options.get("inplace", False)
+            case_sensitive = options.get("case_sensitive", True)
 
-              cleaned_content = flexible_pattern.sub(replace_path, cleaned_content)
-          else:
-              # Pattern for matching variable assignment with word boundaries to avoid partial matches
-              assignment_pattern = re.compile(
-                  rf'\b(?P<key>{re.escape(pattern)})\s*=\s*(?P<value>[^\n]*)',
-                  flags
-              )
-              def replace_value(match):
-                  key = match.group('key')
-                  logging.info(f"Replacing value for key '{key}' with {replacement}")
-                  return f"{key} = {replacement}"
+            flags = 0 if case_sensitive else re.IGNORECASE
 
-              cleaned_content = assignment_pattern.sub(replace_value, cleaned_content)
+            if inplace:
+                flexible_pattern = re.compile(
+                    rf'\b{re.escape(pattern)}\b',
+                    flags
+                )
+                
+                def replace_path(match):
+                    filename = os.path.basename(match.group(0))
+                    new_path = os.path.join(replacement, filename)
+                    if new_path not in already_replaced:
+                        already_replaced.add(new_path)
+                        logging.info(f"Replacing path: {match.group(0)} with {new_path}")
+                        return new_path
+                    return match.group(0)
 
-      if content != cleaned_content:
-          logging.info(f"Modified content of {filepath}:\n{cleaned_content[:200]}")  # Show first 200 characters for brevity
-          with open(filepath, 'w', encoding='utf-8') as file:
-              file.write(cleaned_content)
-          logging.info(f"File modified: {filepath}")
-          return True
-      else:
-          logging.info(f"No changes needed for file: {filepath}")
-          return False
+                cleaned_content = flexible_pattern.sub(replace_path, cleaned_content)
+            else:
+                assignment_pattern = re.compile(
+                    rf'\b(?P<key>{re.escape(pattern)})\b(\s*=\s*)(?P<value>[^\n]*)',
+                    flags
+                )
+                
+                def replace_value(match):
+                    key = match.group('key')
+                    if key not in already_replaced:
+                        already_replaced.add(key)
+                        logging.info(f"Replacing value for key '{key}' with {replacement}")
+                        return f"{key} = {replacement}"
+                    return match.group(0)
 
-  except Exception as e:
-      logging.error(f"Error cleaning file {filepath}: {e}")
-      return False
+                cleaned_content = assignment_pattern.sub(replace_value, cleaned_content)
+
+        if content != cleaned_content:
+            logging.info(f"Modified content of {filepath}:\n{cleaned_content[:200]}")
+            with open(filepath, 'w', encoding='utf-8') as file:
+                file.write(cleaned_content)
+            logging.info(f"File modified: {filepath}")
+            return True
+        else:
+            logging.info(f"No changes needed for file: {filepath}")
+            return False
+
+    except Exception as e:
+        logging.error(f"Error cleaning file {filepath}: {e}")
+        return False
+
 
 def clean_files(patterns, include_dirs=None, enforce_all=False):
     if enforce_all:
