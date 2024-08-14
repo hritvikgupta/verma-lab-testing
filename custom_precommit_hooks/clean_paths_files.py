@@ -1735,150 +1735,143 @@ import argparse
 import subprocess
 import glob
 import json
-import logging
+import tempfile
 from datetime import datetime
 
-# Set up logging
-log_file = 'pre_commit.log'
-logging.basicConfig(
-  filename=log_file,
-  level=logging.INFO,
-  format='%(asctime)s - %(levelname)s - %(message)s',
-  datefmt='%Y-%m-%d %H:%M:%S'
-)
-
-def log_and_print(message, level=logging.INFO):
-  print(message)
-  logging.log(level, message)
+def log_and_print(message, log_file):
+    print(message)
+    log_file.write(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - {message}\n")
+    log_file.flush()
 
 def is_binary_file(filepath):
-  try:
-      with open(filepath, 'rb') as file:
-          for block in iter(lambda: file.read(1024), b''):
-              if b'\0' in block:
-                  return True
-      return False
-  except Exception as e:
-      log_and_print(f"Error checking if file is binary: {e}", logging.ERROR)
-      return False  # Assume non-binary on error
+    try:
+        with open(filepath, 'rb') as file:
+            for block in iter(lambda: file.read(1024), b''):
+                if b'\0' in block:
+                    return True
+        return False
+    except Exception as e:
+        return False  # Assume non-binary on error
 
-def clean_file(filepath, patterns):
-  # Skip .json and .yaml files
-  if filepath.endswith(('.json', '.yaml', '.yml')):
-      log_and_print(f"Skipping file: {filepath}")
-      return False
+def clean_file(filepath, patterns, log_file):
+    if filepath.endswith(('.json', '.yaml', '.yml')):
+        log_and_print(f"Skipping file: {filepath}", log_file)
+        return False
 
-  if is_binary_file(filepath):
-      log_and_print(f"Skipping binary file: {filepath}")
-      return False
-  
-  try:
-      with open(filepath, 'r', encoding='utf-8') as file:
-          content = file.read()
+    if is_binary_file(filepath):
+        log_and_print(f"Skipping binary file: {filepath}", log_file)
+        return False
+    
+    try:
+        with open(filepath, 'r', encoding='utf-8') as file:
+            content = file.read()
 
-      log_and_print(f"Cleaning file: {filepath}")
+        log_and_print(f"Cleaning file: {filepath}", log_file)
 
-      cleaned_content = content
-      for pattern, options in patterns.items():
-          replacement = options.get("replacement")
-          inplace = options.get("inplace", False)
-          case_sensitive = options.get("case_sensitive", True)
+        cleaned_content = content
+        for pattern, options in patterns.items():
+            replacement = options.get("replacement")
+            inplace = options.get("inplace", False)
+            case_sensitive = options.get("case_sensitive", True)
 
-          flags = 0 if case_sensitive else re.IGNORECASE
+            flags = 0 if case_sensitive else re.IGNORECASE
 
-          if inplace:
-              flexible_pattern = re.compile(rf'\b{re.escape(pattern)}\b', flags)
-              def replace_path(match):
-                  filename = os.path.basename(match.group(0))
-                  new_path = os.path.join(replacement, filename)
-                  log_and_print(f"Replacing path: {match.group(0)} with {new_path}")
-                  return new_path
+            if inplace:
+                flexible_pattern = re.compile(rf'\b{re.escape(pattern)}\b', flags)
+                def replace_path(match):
+                    filename = os.path.basename(match.group(0))
+                    new_path = os.path.join(replacement, filename)
+                    log_and_print(f"Replacing path: {match.group(0)} with {new_path}", log_file)
+                    return new_path
 
-              cleaned_content = flexible_pattern.sub(replace_path, cleaned_content)
-          else:
-              assignment_pattern = re.compile(rf'\b(?P<key>{re.escape(pattern)})\b(\s*=\s*)(?P<value>[^\n]*)', flags)
-              def replace_value(match):
-                  key = match.group('key')
-                  log_and_print(f"Replacing value for key '{key}' with {replacement}")
-                  return f"{key} = {replacement}"
+                cleaned_content = flexible_pattern.sub(replace_path, cleaned_content)
+            else:
+                assignment_pattern = re.compile(rf'\b(?P<key>{re.escape(pattern)})\b(\s*=\s*)(?P<value>[^\n]*)', flags)
+                def replace_value(match):
+                    key = match.group('key')
+                    log_and_print(f"Replacing value for key '{key}' with {replacement}", log_file)
+                    return f"{key} = {replacement}"
 
-              cleaned_content = assignment_pattern.sub(replace_value, cleaned_content)
+                cleaned_content = assignment_pattern.sub(replace_value, cleaned_content)
 
-      if content != cleaned_content:
-          with open(filepath, 'w', encoding='utf-8') as file:
-              file.write(cleaned_content)
-          log_and_print(f"File modified: {filepath}")
-          return True
-      else:
-          log_and_print(f"No changes needed for file: {filepath}")
-          return False
+        if content != cleaned_content:
+            with open(filepath, 'w', encoding='utf-8') as file:
+                file.write(cleaned_content)
+            log_and_print(f"File modified: {filepath}", log_file)
+            return True
+        else:
+            log_and_print(f"No changes needed for file: {filepath}", log_file)
+            return False
 
-  except Exception as e:
-      log_and_print(f"Error cleaning file {filepath}: {e}", logging.ERROR)
-      return False
+    except Exception as e:
+        log_and_print(f"Error cleaning file {filepath}: {e}", log_file)
+        return False
 
-def clean_files(patterns, include_dirs=None, enforce_all=False):
-  if enforce_all:
-      all_files = []
-      for root, _, files in os.walk('.'):
-          for file in files:
-              filepath = os.path.join(root, file)
-              if include_dirs:
-                  if any(os.path.abspath(filepath).startswith(os.path.abspath(include_dir)) for include_dir in include_dirs):
-                      all_files.append(filepath)
-              else:
-                  all_files.append(filepath)
-      relevant_files = all_files
-  else:
-      relevant_files = subprocess.check_output(['git', 'diff', '--cached', '--name-only']).decode().splitlines()
+def clean_files(patterns, include_dirs=None, enforce_all=False, log_file):
+    if enforce_all:
+        all_files = []
+        for root, _, files in os.walk('.'):
+            for file in files:
+                filepath = os.path.join(root, file)
+                if include_dirs:
+                    if any(os.path.abspath(filepath).startswith(os.path.abspath(include_dir)) for include_dir in include_dirs):
+                        all_files.append(filepath)
+                else:
+                    all_files.append(filepath)
+        relevant_files = all_files
+    else:
+        relevant_files = subprocess.check_output(['git', 'diff', '--cached', '--name-only']).decode().splitlines()
 
-  modified_files = []
-  for filepath in relevant_files:
-      if os.path.exists(filepath):
-          if clean_file(filepath, patterns):
-              modified_files.append(filepath)
-  
-  if modified_files:
-      subprocess.check_call(["git", "add"] + modified_files)
-      log_and_print(f"Re-staged modified files: {', '.join(modified_files)}")
-      log_and_print("Please review the changes before committing.")
-  else:
-      log_and_print("No files were modified.")
+    modified_files = []
+    for filepath in relevant_files:
+        if os.path.exists(filepath):
+            if clean_file(filepath, patterns, log_file):
+                modified_files.append(filepath)
+    
+    if modified_files:
+        subprocess.check_call(["git", "add"] + modified_files)
+        log_and_print(f"Re-staged modified files: {', '.join(modified_files)}", log_file)
+        log_and_print("Please review the changes before committing.", log_file)
+    else:
+        log_and_print("No files were modified.", log_file)
 
-  return 0  # Always allow the commit to proceed
+    return 0  # Always allow the commit to proceed
 
 def main():
-  log_and_print("\n### Cleaning Files Hook ###")
-  parser = argparse.ArgumentParser()
-  parser.add_argument('--json-config', help='Path to JSON config file', type=str)
-  parser.add_argument('--enforce-all', action='store_true', help='Enforce cleaning all relevant files, not just staged files')
-  args, unknown = parser.parse_known_args()
+    with tempfile.NamedTemporaryFile(mode='w+', delete=False) as temp_log_file:
+        log_and_print("\n### Cleaning Files Hook ###", temp_log_file)
+        parser = argparse.ArgumentParser()
+        parser.add_argument('--json-config', help='Path to JSON config file', type=str)
+        parser.add_argument('--enforce-all', action='store_true', help='Enforce cleaning all relevant files, not just staged files')
+        args, unknown = parser.parse_known_args()
 
-  if args.json_config:
-      with open(args.json_config, 'r') as f:
-          config = json.load(f)
-          patterns = config['patterns']
-          include_dirs = config['directories']
-          log_and_print(f"Loaded JSON config: {config}")
-  else:
-      log_and_print("JSON config file is required.", logging.ERROR)
-      return 0  # Still allow commit to proceed
+        if args.json_config:
+            with open(args.json_config, 'r') as f:
+                config = json.load(f)
+                patterns = config['patterns']
+                include_dirs = config['directories']
+                log_and_print(f"Loaded JSON config: {config}", temp_log_file)
+        else:
+            log_and_print("JSON config file is required.", temp_log_file)
+            return 0  # Still allow commit to proceed
 
-  if include_dirs:
-      expanded_dirs = []
-      for dir_pattern in include_dirs:
-          matching_dirs = glob.glob(dir_pattern)
-          expanded_dirs.extend(matching_dirs)
-      include_dirs = expanded_dirs
+        if include_dirs:
+            expanded_dirs = []
+            for dir_pattern in include_dirs:
+                matching_dirs = glob.glob(dir_pattern)
+                expanded_dirs.extend(matching_dirs)
+            include_dirs = expanded_dirs
 
-  result = clean_files(patterns, include_dirs, args.enforce_all)
-  
-  # Stage the log file if it was modified
-  if os.path.exists(log_file):
-      subprocess.check_call(["git", "add", log_file])
-      log_and_print(f"Staged log file: {log_file}")
+        result = clean_files(patterns, include_dirs, args.enforce_all, temp_log_file)
 
-  return result
+    # Append the temporary log to pre_commit.log
+    with open('pre_commit.log', 'a') as main_log, open(temp_log_file.name, 'r') as temp_log:
+        main_log.write(temp_log.read())
+
+    # Remove the temporary log file
+    os.unlink(temp_log_file.name)
+
+    return result
 
 if __name__ == '__main__':
-  raise SystemExit(main())
+    raise SystemExit(main())
